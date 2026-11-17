@@ -66,68 +66,31 @@ def find_jra_actions(url):
     print("JRA公式ページ取得開始")
 
     html = get_page(url)
-    print("HTML文字数:", len(html))
-    print("HTML先頭:", repr(html[:300]))    
 
-    print("doActionの数:", html.count("doAction"))   
-
-    actions = re.findall(r".{0,100}doAction.{0,150}", html)
-    print("doActionの実物:", actions[:5])
-    
     matches = re.findall(
         r"doAction\(['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]",
         html
     )
-    print("正規表現で取得できた数:", len(matches))
 
-    
-    parser = JRAParser()
-    parser.feed(html)
+    print("取得リンク数:", len(matches))
 
-    print("取得リンク数:", len(parser.links))
+    result_count = 0
 
-    action_count = 0
-    srl_count = 0
-    sde_count = 0
+    for path, cname in matches:
+        if "accessS.html" in path:
+            target_url = (
+                urljoin(url, path)
+                + "?CNAME="
+                + quote(cname, safe="/")
+            )
 
-    for link in parser.links:
-        onclick = link["onclick"]
-        label = " ".join(link["text"])
+            print("レース結果リンク:", cname)
+            print("取得URL:", target_url)
 
-        match = re.search(
-            r"doAction\(['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]",
-            onclick
-        )
+            result_count += 1
 
-        if not match:
-            continue
-
-        path = match.group(1)
-        cname = match.group(2)
-
-        target_url = (
-            urljoin(url, path)
-            + "?CNAME="
-            + quote(cname, safe="/")
-        )
-
-        action_count += 1
-
-        if "pw01srl" in cname:
-            srl_count += 1
-
-        if "pw01sde" in cname:
-            sde_count += 1
-
-        print("\nリンク文字:", label)
-        print("CNAME:", cname)
-        print("取得URL:", target_url)
-
-    print("\nJavaScriptリンク数:", action_count)
-    print("開催選択リンク数:", srl_count)
-    print("レース結果リンク数:", sde_count)
+    print("レース結果リンク数:", result_count)
     print("JRAリンク調査終了")
-
 
 if __name__ == "__main__":
     try:
