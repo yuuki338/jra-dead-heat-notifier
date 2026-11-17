@@ -25,6 +25,10 @@ jobs:
       - name: Test automatic execution
         run: |
           python -c "from datetime import datetime, timezone; print('JRA notification system started:', datetime.now(timezone.utc))"
+
+      - name: Run Python program
+        run: python main.py
+
       - name: Send test notification to iPhone
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -34,3 +38,4 @@ jobs:
             -H "Title: JRA notification test" \
             -d "GitHubからiPhoneへの通知テストです。" \
             "https://ntfy.sh/${NTFY_TOPIC}"
+
