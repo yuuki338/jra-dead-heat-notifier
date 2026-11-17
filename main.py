@@ -43,14 +43,14 @@ def get_page(url):
     request = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0"}
-)
-
-with urllib.request.urlopen(request, timeout=20) as response:
-    charset = response.headers.get_content_charset() or "utf-8"
-    return response.read().decode(
-        charset,
-        errors="replace"
     )
+
+    with urllib.request.urlopen(request, timeout=20) as response:
+        charset = response.headers.get_content_charset() or "utf-8"
+        return response.read().decode(
+            charset,
+            errors="replace"
+        )
 
 
 def find_result_links(url):
