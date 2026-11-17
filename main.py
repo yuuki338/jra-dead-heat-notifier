@@ -73,7 +73,14 @@ def find_jra_actions(url):
 
     actions = re.findall(r".{0,100}doAction.{0,150}", html)
     print("doActionの実物:", actions[:5])
+    
+    matches = re.findall(
+        r"doAction\(['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+        html
+    )
+    print("正規表現で取得できた数:", len(matches))
 
+    
     parser = JRAParser()
     parser.feed(html)
 
