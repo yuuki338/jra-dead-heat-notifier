@@ -8,10 +8,14 @@ class JRAParser(HTMLParser):
         super().__init__()
         self.text = []
 
+    def handle_starttag(self, tag, attrs):
+        for name, value in attrs:
+            if name.lower() in ("alt", "title") and value:
+                self.text.append(value)
+
     def handle_data(self, data):
         if data.strip():
             self.text.append(data.strip())
-
 
 def check_jra_result(url):
     request = urllib.request.Request(
