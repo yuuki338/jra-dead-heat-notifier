@@ -1,45 +1,73 @@
-
 import urllib.request
 from html.parser import HTMLParser
+from urllib.parse import urljoin
+
+
+JRA_URLS = [
+    "https://www.jra.go.jp/",
+    "https://www.jra.go.jp/keiba/",
+]
 
 
 class JRAParser(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.text = []
+        self.links = []
 
     def handle_starttag(self, tag, attrs):
+        if tag.lower() != "a":
+            return
+
         for name, value in attrs:
-            if name.lower() in ("alt", "title") and value:
-                self.text.append(value)
+            if name.lower() == "href" and value:
+                self.links.append(value)
 
-    def handle_data(self, data):
-        if data.strip():
-            self.text.append(data.strip())
 
-def check_jra_result(url):
+def get_page(url):
     request = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0"}
-    )
+)
 
     with urllib.request.urlopen(request, timeout=20) as response:
-        charset = response.headers.get_content_charset() or "shift_jis"
-        html = response.read().decode(charset, errors="replace")
-    
+        charset = response.headers.get_content_charset() or "utf-8"
+        return response.read().decode(charset, errors="replace")
+
+
+def find_result_links(url):
+    print("\n確認ページ:", url)
+
+    html = get_page(url)
     parser = JRAParser()
     parser.feed(html)
 
-    page_text = " ".join(parser.text)
+    found = set()
 
-    if "同着" in page_text:
-        print("ページ内に「同着」の文字を確認しました。")
+    for link in parser.links:
+        full_url = urljoin(url, link)
+
+        if "accessS.html" in full_url or "pw01sde" in full_url:
+            found.add(full_url)
+
+    if found:
+        for result_url in sorted(found):
+            print("レース結果候補:", result_url)
     else:
-        print("ページ内に「同着」の文字は見つかりませんでした。")
+        print("このページから直接のレース結果リンクは見つかりませんでした。")
+
+    return found
 
 
 if __name__ == "__main__":
-    print("JRA公式ページ読み取りテスト")
-    check_jra_result(
-        "https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1008202605020820261108/7F"
-    )
+    print("JRA公式リンク取得テスト開始")
+
+    all_links = set()
+
+    for url in JRA_URLS:
+        try:
+            all_links.update(find_result_links(url))
+        except Exception as error:
+            print("取得エラー:", error)
+
+    print("\n取得できた結果リンク数:", len(all_links))
+    print("JRA公式リンク取得テスト終了")
