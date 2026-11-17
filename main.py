@@ -13,14 +13,30 @@ class JRAParser(HTMLParser):
     def __init__(self):
         super().__init__()
         self.links = []
+        self.current_link = None
 
     def handle_starttag(self, tag, attrs):
-        if tag.lower() != "a":
-            return
+        if tag.lower() == "a":
+            self.current_link = {
+                "href": "",
+                "text": []
+            }
 
-        for name, value in attrs:
-            if name.lower() == "href" and value:
-                self.links.append(value)
+            for name, value in attrs:
+                if name.lower() == "href" and value:
+                    self.current_link["href"] = value
+
+                if name.lower() in ("alt", "title") and value:
+                    self.current_link["text"].append(value)
+
+    def handle_data(self, data):
+        if self.current_link and data.strip():
+            self.current_link["text"].append(data.strip())
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self.current_link:
+            self.links.append(self.current_link)
+            self.current_link = None
 
 
 def get_page(url):
@@ -29,45 +45,58 @@ def get_page(url):
         headers={"User-Agent": "Mozilla/5.0"}
 )
 
-    with urllib.request.urlopen(request, timeout=20) as response:
-        charset = response.headers.get_content_charset() or "utf-8"
-        return response.read().decode(charset, errors="replace")
+with urllib.request.urlopen(request, timeout=20) as response:
+    charset = response.headers.get_content_charset() or "utf-8"
+    return response.read().decode(
+        charset,
+        errors="replace"
+    )
 
 
 def find_result_links(url):
     print("\n確認ページ:", url)
 
     html = get_page(url)
+
     parser = JRAParser()
     parser.feed(html)
 
-    found = set()
+    print("取得したリンク総数:", len(parser.links))
+
+    keywords = [
+        "レース結果",
+        "過去のレース結果",
+        "開催情報",
+        "出馬表"
+    ]
+
+    found = 0
 
     for link in parser.links:
-        full_url = urljoin(url, link)
+        href = link["href"]
+        label = " ".join(link["text"])
 
-        if "accessS.html" in full_url or "pw01sde" in full_url:
-            found.add(full_url)
+        full_url = urljoin(url, href)
 
-    if found:
-        for result_url in sorted(found):
-            print("レース結果候補:", result_url)
-    else:
-        print("このページから直接のレース結果リンクは見つかりませんでした。")
+        if any(word in label for word in keywords):
+            print("\nリンク文字:", label)
+            print("リンクURL:", full_url)
+            found += 1
 
-    return found
+        elif "JRADB" in full_url or "pw01sde" in full_url:
+            print("\n結果ページ候補:", full_url)
+            found += 1
+
+    print("\n今回見つかった候補数:", found)
 
 
 if __name__ == "__main__":
-    print("JRA公式リンク取得テスト開始")
-
-    all_links = set()
+    print("JRAリンク詳細取得テスト開始")
 
     for url in JRA_URLS:
         try:
-            all_links.update(find_result_links(url))
+            find_result_links(url)
         except Exception as error:
-            print("取得エラー:", error)
+            print("\n取得エラー:", error)
 
-    print("\n取得できた結果リンク数:", len(all_links))
-    print("JRA公式リンク取得テスト終了")
+    print("\nJRAリンク詳細取得テスト終了")
