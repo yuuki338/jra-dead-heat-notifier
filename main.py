@@ -63,34 +63,41 @@ def get_page(url):
 
 
 def find_jra_actions(url):
-    print("JRA公式ページ取得開始")
+    print("JRA開催選択ページへPOST送信")
 
-    html = get_page(url)
+    request = urllib.request.Request(
+        "https://www.jra.go.jp/JRADB/accessS.html",
+        data=b"cname=pw01sli00/AF",
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+    )
+
+    with urllib.request.urlopen(request, timeout=20) as response:
+        charset = response.headers.get_content_charset() or "shift_jis"
+        html = response.read().decode(charset, errors="replace")
+
+    print("ページ取得文字数:", len(html))
 
     matches = re.findall(
         r"doAction\(['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]",
         html
     )
 
-    print("取得リンク数:", len(matches))
+    srl_matches = [
+        (path, cname)
+        for path, cname in matches
+        if "pw01srl" in cname
+    ]
 
-    result_count = 0
+    print("開催選択リンク数:", len(srl_matches))
 
-    for path, cname in matches:
-        if "accessS.html" in path:
-            target_url = (
-                urljoin(url, path)
-                + "?CNAME="
-                + quote(cname, safe="/")
-            )
+    for path, cname in srl_matches[:5]:
+        print("開催リンク:", cname)
 
-            print("レース結果リンク:", cname)
-            print("取得URL:", target_url)
+    print("開催選択ページ調査終了")
 
-            result_count += 1
-
-    print("レース結果リンク数:", result_count)
-    print("JRAリンク調査終了")
 
 if __name__ == "__main__":
     try:
