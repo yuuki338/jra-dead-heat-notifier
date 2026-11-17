@@ -61,13 +61,14 @@ def get_page(url):
             errors="replace"
         )
 
-
 def find_jra_actions(url):
-    print("JRA開催選択ページへPOST送信")
+    print("開催選択から詳細結果への移動テスト")
+
+    cname = "pw01srl10082026050320261114/50"
 
     request = urllib.request.Request(
         "https://www.jra.go.jp/JRADB/accessS.html",
-        data=b"cname=pw01sli00/AF",
+        data=("cname=" + cname).encode("shift_jis"),
         headers={
             "User-Agent": "Mozilla/5.0",
             "Content-Type": "application/x-www-form-urlencoded"
@@ -78,26 +79,24 @@ def find_jra_actions(url):
         charset = response.headers.get_content_charset() or "shift_jis"
         html = response.read().decode(charset, errors="replace")
 
-    print("ページ取得文字数:", len(html))
-
     matches = re.findall(
         r"doAction\(['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]",
         html
     )
 
-    srl_matches = [
-        (path, cname)
-        for path, cname in matches
-        if "pw01srl" in cname
+    sde_matches = [
+        (path, value)
+        for path, value in matches
+        if "pw01sde" in value
     ]
 
-    print("開催選択リンク数:", len(srl_matches))
+    print("取得ページ文字数:", len(html))
+    print("詳細結果リンク数:", len(sde_matches))
 
-    for path, cname in srl_matches[:5]:
-        print("開催リンク:", cname)
+    for path, value in sde_matches[:5]:
+        print("詳細結果:", value)
 
-    print("開催選択ページ調査終了")
-
+    print("詳細結果調査終了")
 
 if __name__ == "__main__":
     try:
