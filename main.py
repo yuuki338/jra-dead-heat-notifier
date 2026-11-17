@@ -24,8 +24,9 @@ def check_jra_result(url):
     )
 
     with urllib.request.urlopen(request, timeout=20) as response:
-        html = response.read().decode("utf-8", errors="replace")
-
+        charset = response.headers.get_content_charset() or "shift_jis"
+        html = response.read().decode(charset, errors="replace")
+    
     parser = JRAParser()
     parser.feed(html)
 
