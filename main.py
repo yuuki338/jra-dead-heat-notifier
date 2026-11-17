@@ -3,10 +3,10 @@ from collections import defaultdict
 
 
 def detect_dead_heats(results):
-"""
-同じ着順に複数の馬がいる場合、同着として検出する。
-results: [(着順, 馬番, 馬名), ...]
-"""
+    """
+    同じ着順に複数の馬がいる場合、同着として検出する。
+    results: [(着順, 馬番, 馬名), ...]
+    """
     positions = defaultdict(list)
 
     for rank, horse_number, horse_name in results:
