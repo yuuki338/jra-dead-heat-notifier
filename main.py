@@ -1,12 +1,13 @@
 import urllib.request
 from html.parser import HTMLParser
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote
+import re
 
 
-JRA_URLS = [
-    "https://www.jra.go.jp/",
-    "https://www.jra.go.jp/keiba/",
-]
+TEST_URL = (
+    "https://www.jra.go.jp/JRADB/accessS.html"
+    "?CNAME=pw01sde1008202605031120261114/B7"
+)
 
 
 class JRAParser(HTMLParser):
@@ -15,19 +16,27 @@ class JRAParser(HTMLParser):
         self.links = []
         self.current_link = None
 
-    def handle_starttag(self, tag, attrs):
-        if tag.lower() == "a":
-            self.current_link = {
-                "href": "",
-                "text": []
-            }
+def handle_starttag(self, tag, attrs):
+    if tag.lower() == "a":
+        self.current_link = {
+            "href": "",
+            "onclick": "",
+            "text": []
+        }
 
-            for name, value in attrs:
-                if name.lower() == "href" and value:
-                    self.current_link["href"] = value
+    if self.current_link:
+        for name, value in attrs:
+            if not value:
+                continue
 
-                if name.lower() in ("alt", "title") and value:
-                    self.current_link["text"].append(value)
+            if name.lower() == "href":
+                self.current_link["href"] = value
+
+            elif name.lower() == "onclick":
+                self.current_link["onclick"] = value
+
+            elif name.lower() in ("alt", "title"):
+                self.current_link["text"].append(value)
 
     def handle_data(self, data):
         if self.current_link and data.strip():
@@ -39,69 +48,75 @@ class JRAParser(HTMLParser):
             self.current_link = None
 
 
-def get_page(url):
-    request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Mozilla/5.0"}
-    )
+    def get_page(url):
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
 
     with urllib.request.urlopen(request, timeout=20) as response:
-        charset = "shift_jis"
+        charset = response.headers.get_content_charset() or "shift_jis"
         return response.read().decode(
             charset,
             errors="replace"
         )
 
 
-def find_result_links(url):
-    print("\n確認ページ:", url)
+def find_jra_actions(url):
+    print("JRA公式ページ取得開始")
 
     html = get_page(url)
 
     parser = JRAParser()
     parser.feed(html)
 
-    print("取得したリンク総数:", len(parser.links))
-    
-    print("\nリンク内容の確認:")
+    print("取得リンク数:", len(parser.links))
 
-    for link in parser.links[:20]:
-        print("文字:", " ".join(link["text"]))
-        print("URL:", urljoin(url, link["href"]))
-        keywords = [
-        "レース結果",
-        "過去のレース結果",
-        "開催情報",
-        "出馬表"
-    ]
-
-    found = 0
+    action_count = 0
+    srl_count = 0
+    sde_count = 0
 
     for link in parser.links:
-        href = link["href"]
+        onclick = link["onclick"]
         label = " ".join(link["text"])
 
-        full_url = urljoin(url, href)
+        match = re.search(
+            r"doAction\(['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]",
+            onclick
+        )
 
-        if any(word in label for word in keywords):
-            print("\nリンク文字:", label)
-            print("リンクURL:", full_url)
-            found += 1
+        if not match:
+            continue
 
-        elif "JRADB" in full_url or "pw01sde" in full_url:
-            print("\n結果ページ候補:", full_url)
-            found += 1
+        path = match.group(1)
+        cname = match.group(2)
 
-    print("\n今回見つかった候補数:", found)
+        target_url = (
+            urljoin(url, path)
+            + "?CNAME="
+            + quote(cname, safe="/")
+        )
+
+        action_count += 1
+
+        if "pw01srl" in cname:
+            srl_count += 1
+
+        if "pw01sde" in cname:
+            sde_count += 1
+
+        print("\nリンク文字:", label)
+        print("CNAME:", cname)
+        print("取得URL:", target_url)
+
+    print("\nJavaScriptリンク数:", action_count)
+    print("開催選択リンク数:", srl_count)
+    print("レース結果リンク数:", sde_count)
+    print("JRAリンク調査終了")
 
 
 if __name__ == "__main__":
-    print("JRAリンク詳細取得テスト開始")
-
-    for url in JRA_URLS:
-        try:
-            find_result_links(url)
-        except Exception as error:
-            print("\n取得エラー:", error)
-
-    print("\nJRAリンク詳細取得テスト終了")
+    try:
+        find_jra_actions(TEST_URL)
+    except Exception as error:
+        print("エラー:", error)
