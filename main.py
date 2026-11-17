@@ -70,7 +70,10 @@ def find_jra_actions(url):
     print("HTML先頭:", repr(html[:300]))    
 
     print("doActionの数:", html.count("doAction"))   
-    
+
+    actions = re.findall(r".{0,100}doAction.{0,150}", html)
+    print("doActionの実物:", actions[:5])
+
     parser = JRAParser()
     parser.feed(html)
 
