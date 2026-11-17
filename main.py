@@ -62,8 +62,12 @@ def find_result_links(url):
     parser.feed(html)
 
     print("取得したリンク総数:", len(parser.links))
+    
+    print("\nリンク内容の確認:")
 
-    keywords = [
+    for link in parser.links[:20]:
+        print("文字:", " ".join(link["text"]))
+        print("URL:", urljoin(url, link["href"]))    keywords = [
         "レース結果",
         "過去のレース結果",
         "開催情報",
