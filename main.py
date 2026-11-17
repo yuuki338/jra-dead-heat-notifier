@@ -48,11 +48,11 @@ def handle_starttag(self, tag, attrs):
             self.current_link = None
 
 
-    def get_page(url):
-        request = urllib.request.Request(
-            url,
-            headers={"User-Agent": "Mozilla/5.0"}
-        )
+def get_page(url):
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
 
     with urllib.request.urlopen(request, timeout=20) as response:
         charset = response.headers.get_content_charset() or "shift_jis"
