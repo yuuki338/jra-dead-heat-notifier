@@ -29,6 +29,9 @@ jobs:
       - name: Run Python program
         run: python main.py
 
+      - name: Check event type
+        run: echo "Event name: ${{ github.event_name }}"
+
       - name: Send test notification to iPhone
         if: github.event_name == 'workflow_dispatch'
         env:
