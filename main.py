@@ -69,6 +69,8 @@ def find_jra_actions(url):
     print("HTML文字数:", len(html))
     print("HTML先頭:", repr(html[:300]))    
 
+    print("doActionの数:", html.count("doAction"))   
+    
     parser = JRAParser()
     parser.feed(html)
 
