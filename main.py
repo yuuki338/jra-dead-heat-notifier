@@ -66,6 +66,8 @@ def find_jra_actions(url):
     print("JRA公式ページ取得開始")
 
     html = get_page(url)
+    print("HTML文字数:", len(html))
+    print("HTML先頭:", repr(html[:300]))    
 
     parser = JRAParser()
     parser.feed(html)
