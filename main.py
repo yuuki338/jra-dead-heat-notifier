@@ -1,28 +1,40 @@
 
-from collections import defaultdict
+import urllib.request
+from html.parser import HTMLParser
 
 
-def detect_dead_heats(results):
-    """
-    同じ着順に複数の馬がいる場合、同着として検出する。
-    results: [(着順, 馬番, 馬名), ...]
-    """
-    positions = defaultdict(list)
+class JRAParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.text = []
 
-    for rank, horse_number, horse_name in results:
-        if rank <= 3:
-            positions[rank].append({
-                "horse_number": horse_number,
-                "horse_name": horse_name
-            })
+    def handle_data(self, data):
+        if data.strip():
+            self.text.append(data.strip())
 
-    return {
-        rank: horses
-        for rank, horses in positions.items()
-        if len(horses) >= 2
-    }
+
+def check_jra_result(url):
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
+
+    with urllib.request.urlopen(request, timeout=20) as response:
+        html = response.read().decode("utf-8", errors="replace")
+
+    parser = JRAParser()
+    parser.feed(html)
+
+    page_text = " ".join(parser.text)
+
+    if "同着" in page_text:
+        print("ページ内に「同着」の文字を確認しました。")
+    else:
+        print("ページ内に「同着」の文字は見つかりませんでした。")
 
 
 if __name__ == "__main__":
-    print("JRA同着通知システム")
-    print("同着判定プログラムを起動しました。")
+    print("JRA公式ページ読み取りテスト")
+    check_jra_result(
+        "https://www.jra.go.jp/JRADB/accessS.html?CNAME=pw01sde1008202605020820261108/7F"
+    )
