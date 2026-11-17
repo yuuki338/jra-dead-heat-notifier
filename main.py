@@ -67,7 +67,8 @@ def find_result_links(url):
 
     for link in parser.links[:20]:
         print("文字:", " ".join(link["text"]))
-        print("URL:", urljoin(url, link["href"]))    keywords = [
+        print("URL:", urljoin(url, link["href"]))
+        keywords = [
         "レース結果",
         "過去のレース結果",
         "開催情報",
