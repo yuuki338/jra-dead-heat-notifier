@@ -46,7 +46,7 @@ def get_page(url):
     )
 
     with urllib.request.urlopen(request, timeout=20) as response:
-        charset = response.headers.get_content_charset() or "utf-8"
+        charset = "shift_jis"
         return response.read().decode(
             charset,
             errors="replace"
